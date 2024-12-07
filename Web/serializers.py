@@ -36,3 +36,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.role = 'customer'  # Gán vai trò mặc định
         user.save()
         return user
+    
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = '__all__'
+        
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
