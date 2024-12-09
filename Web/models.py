@@ -16,10 +16,11 @@ class UserAccountManager(BaseUserManager):
         user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)  # Mã hóa mật khẩu
          # Đặt is_staff dựa trên role
-        if role in ['employee', 'manager']:
-            user.is_staff = True
-        else:
-            user.is_staff = False
+        # if role in ['employee', 'manager']:
+        #     user.is_staff = True
+        # else:
+        #     user.is_staff = False
+        user.is_staff = True
         user.save(using=self._db)
         return user
 
@@ -79,7 +80,7 @@ class User(AbstractBaseUser, PermissionsMixin):  # AbstractUser đã tích hợp
         if self.role in ['employee', 'manager']:
             self.is_staff = True
         else:
-            self.is_staff = False
+            self.is_staff = True
         super(User, self).save(*args, **kwargs)
         r = self.role
         # print(r)
@@ -237,8 +238,9 @@ class Order(models.Model):
     email = models.EmailField(max_length=255, null=True, blank=True)
     diachi = models.CharField(max_length=255, null=True, blank=True)
     tongtien = models.FloatField(default=0.0)
+    products = models.ManyToManyField(Product, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)  # Liên kết với người dùng
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE) 
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True) 
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.CASCADE, name="Payment Method")
     discount = models.ForeignKey(Discount, on_delete=models.SET_NULL, null=True, blank=True)
     
@@ -257,23 +259,61 @@ class Order(models.Model):
     def generate_tracking_number(self):
         return ''.join(random.choices(string.digits, k=10)) 
     
+    def status_view(self):
+        try:
+            if self.status == 'Hủy':
+                status_color= '#FF0000'
+                status = self.status
+            elif self.status == 'Hoàn thành':
+                status_color= '#00FF00'
+                status = self.status
+            else:
+                status_color= '#000000'
+                status = self.status
+
+            html= f'<span style="color: {status_color};">{status}</span>'
+            return format_html(html)
+        except:
+            return 0
+    status_view.short_description = 'Status'
+    
     
 class OrderItem(models.Model):
+    id = models.AutoField(primary_key=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveBigIntegerField(default=1)
+    quantity = models.PositiveSmallIntegerField(default=1)
+    total_value = models.PositiveSmallIntegerField(default=0)
     
     # def __str__(self):
     #     return self.order.tracking_number
+    
+    def clean(self):
+        if self.product not in self.order.products.all():
+            raise ValidationError("Sản phẩm này không thuộc đơn hàng hiện tại")
+    
+    def save(self, *args, **kwargs):
+        self.total_value = self.product.price * self.quantity
+        super().save(*args, **kwargs)
+        # orderitem = OrderItem.objects.filter(order=self.order)
+        # # print("cartitem: ", cartitem.count())
+        # order = Order.objects.get(id = self.order.id)
+        # order.tongtien += self.total_value
+        # order.save()
     
 class Cart(models.Model):
     id = models.AutoField(primary_key=True)
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField(default=0)
+    products = models.ManyToManyField(Product, blank=True)
     total_value = models.PositiveIntegerField(default=0)
     
     def __str__(self):
         return f"Cart of {self.customer.user.username}"
+    
+    def save(self, *args, **kwargs):
+        self.quantity = self.products.count()
+        super().save(*args, **kwargs)
       
 class CartItem(models.Model):
     id = models.AutoField(primary_key=True)
@@ -292,11 +332,12 @@ class CartItem(models.Model):
     def save(self, *args, **kwargs):
         self.price = self.product.price * self.quantity
         super().save(*args, **kwargs)
-        cartitem = CartItem.objects.filter(cart=self.cart)
+        # cartitem = CartItem.objects.filter(cart=self.cart)
         # print("cartitem: ", cartitem.count())
         cart = Cart.objects.get(id = self.cart.id)
-        cart.total_value += self.price
-        cart.quantity = cartitem.count()
+        cart.total_value = 0
+        for i in range(int(cart.quantity)):
+            cart.total_value += self.price
         cart.save()
         
 class BusinessInfo(models.Model):

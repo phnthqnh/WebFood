@@ -89,6 +89,7 @@ admin.site.register(Category)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'status_view']
     list_filter = ['status', 'category']
+    search_fields = ('name', 'status')
     def not_allow_edit(modeladmin, request, queryset):
         settings.ALLOW_EDIT_BY_ADMIN_ONLY = True
     def allow_edit(modeladmin, request, queryset):
@@ -138,19 +139,22 @@ class ProductAdmin(admin.ModelAdmin):
 admin.site.register(Product, ProductAdmin)
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['tracking_number', 'customer', 'employee', 'tongtien', 'status']
-    list_filter = ['status', 'customer', 'employee']
+    list_display = ['tracking_number', 'customer', 'employee', 'tongtien', 'status_view']
+    list_filter = ['status', 'employee']
+    search_fields = ['order__tracking_number', 'customer']
+    autocomplete_fields=('products',)
 admin.site.register(Order, OrderAdmin)
 
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'product', 'quantity']
-    list_filter = ['order']
-    search_fields = ['order']
+    list_display = ['order', 'product', 'quantity', 'total_value']
+    list_filter = ['order__tracking_number']
+    search_fields = ['order__tracking_number']
 admin.site.register(OrderItem, OrderItemAdmin)
 
 class CartAdmin(admin.ModelAdmin):
     list_display = ['customer', 'quantity', 'total_value']
     list_filter = ['customer']
+    autocomplete_fields=('products',)
 admin.site.register(Cart, CartAdmin)
 
 

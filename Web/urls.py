@@ -12,4 +12,8 @@ urlpatterns = [
     path('categories/create/', create_category, name='create_category'),
     path('categories/<int:pk>/update/', update_category, name='update_category'),
     path('categories/<int:pk>/delete/', delete_category, name='delete_category'),
+    path('orders/', customer_orders, name='oders'),
+    path('orders/create/', create_order, name='create_order'),
+    # path('categories/<int:pk>/update/', update_category, name='update_category'),
+    # path('categories/<int:pk>/delete/', delete_category, name='delete_category'),
 ]
