@@ -21,8 +21,6 @@ def post_list_create(request):
     })
 
     elif request.method == 'POST':
-        print(f"User: {request.user}")  # Log thông tin user
-        print(f"Is authenticated: {request.user.is_authenticated}")
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(author=request.user)
