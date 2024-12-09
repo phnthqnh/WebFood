@@ -6,11 +6,12 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Post, Comment
+from Web.models import User
 from .serializers import PostSerializer, CommentSerializer
 
 
 @api_view(['GET', 'POST'])
-# @permission_classes([IsAuthenticatedOrReadOnly])
+@permission_classes([IsAuthenticated])
 def post_list_create(request):
     if request.method == 'GET':
         posts = Post.objects.all().order_by('-created_at')
@@ -20,11 +21,14 @@ def post_list_create(request):
     })
 
     elif request.method == 'POST':
+        print(f"User: {request.user}")  # Log thông tin user
+        print(f"Is authenticated: {request.user.is_authenticated}")
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 @api_view(['GET', 'PUT', 'DELETE'])
 # @permission_classes([IsAuthenticatedOrReadOnly])
